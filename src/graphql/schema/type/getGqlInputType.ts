@@ -25,7 +25,7 @@ import { buildObject, formatName, memoize2 } from '../../utils'
 import BuildToken from '../BuildToken'
 import aliasGqlType from './aliasGqlType'
 import getGqlOutputType from './getGqlOutputType'
-
+import { removeTags, extractTags } from '../../utils/tags'
 /**
  * The values to be returned by `getGqlInputType`. A GraphQL input type, and a
  * function which will turn a GraphQL input value into a proper interface value
@@ -144,11 +144,13 @@ const createGqlInputType = <TValue>(buildToken: BuildToken, _type: Type<TValue>)
       return {
         gqlType: new GraphQLNonNull(new GraphQLInputObjectType({
           name: formatName.type(`${type.name}-input`),
-          description: type.description,
+          description: removeTags(type.description),
+          deprecated: extractTags(type.description).has('deprecated'),
           fields: buildObject(fieldFixtures.map(({ key, field, gqlType }) => ({
             key,
             value: {
-              description: field.description,
+              description: removeTags(field.description),
+              deprecated: extractTags(field.description).has('deprecated'),
               type: field.hasDefault ? getNullableGqlType(gqlType) : gqlType,
             },
           }))),

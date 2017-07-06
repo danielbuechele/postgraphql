@@ -34,6 +34,7 @@ import { formatName, memoize2, buildObject, parseGqlLiteralToValue } from '../..
 import BuildToken from '../BuildToken'
 import createCollectionGqlType from '../collection/createCollectionGqlType'
 import aliasGqlType from './aliasGqlType'
+import { removeTags, extractTags } from '../../utils/tags'
 
 /**
  * The values to be returned by `getGqlInputType`. A GraphQL input type, and a
@@ -114,7 +115,8 @@ const createGqlOutputType = <TValue>(buildToken: BuildToken, _type: Type<TValue>
       return {
         gqlType: new GraphQLNonNull(new GraphQLEnumType({
           name: formatName.type(type.name),
-          description: type.description,
+          description: removeTags(type.description),
+          deprecated: extractTags(type.description).has('deprecated'),
           values: buildObject(Array.from(type.variants).map(([key, value]) => ({
             key: formatName.enumValue(key),
             value: { value },
@@ -150,7 +152,8 @@ const createGqlOutputType = <TValue>(buildToken: BuildToken, _type: Type<TValue>
       return {
         gqlType: new GraphQLNonNull(new GraphQLObjectType({
           name: formatName.type(type.name),
-          description: type.description,
+          description: removeTags(type.description),
+          deprecated: extractTags(type.description).has('deprecated'),
           fields: buildObject<GraphQLFieldConfig<TValue, {}>>(
             // Add all of the fields from the interface object type.
             Array.from(type.fields).map(
@@ -159,7 +162,8 @@ const createGqlOutputType = <TValue>(buildToken: BuildToken, _type: Type<TValue>
                 return {
                   key: formatName.field(fieldName),
                   value: {
-                    description: field.description,
+                    description: removeTags(field.description),
+                    deprecated: extractTags(field.description).has('deprecated'),
                     type: gqlType,
                     resolve: (value: TValue): mixed => intoGqlOutput(field.getValue(value)),
                   },
@@ -198,7 +202,8 @@ const createGqlOutputType = <TValue>(buildToken: BuildToken, _type: Type<TValue>
       return {
         gqlType: new GraphQLNonNull(new GraphQLScalarType({
           name: formatName.type(type.name),
-          description: type.description,
+          description: removeTags(type.description),
+          deprecated: extractTags(type.description).has('deprecated'),
           serialize: (value: TValue): mixed => type.intoOutput(value),
           parseValue: (value: mixed): TValue => type.fromInput(value),
           parseLiteral: (ast: ValueNode): TValue => type.fromInput(parseGqlLiteralToValue(ast)),
@@ -247,7 +252,8 @@ function createJsonGqlType (buildToken: BuildToken): GraphQLScalarType {
     buildToken.options.dynamicJson ? (
       new GraphQLScalarType({
         name: 'Json',
-        description: jsonType.description,
+        description: removeTags(jsonType.description),
+        deprecated: extractTags(jsonType.description).has('deprecated'),
         serialize: value => value,
         parseValue: value => value,
         parseLiteral: ast => parseAstLiteralIntoValue(ast),
@@ -255,7 +261,8 @@ function createJsonGqlType (buildToken: BuildToken): GraphQLScalarType {
     ) : (
       new GraphQLScalarType({
         name: 'Json',
-        description: jsonType.description,
+        description: removeTags(jsonType.description),
+        deprecated: extractTags(jsonType.description).has('deprecated'),
         serialize: value => JSON.stringify(value),
         parseValue: value => typeof value === 'string' ? JSON.parse(value) : null,
         parseLiteral: ast => (ast.kind === 'StringValue' ? JSON.parse(ast.value) : null),

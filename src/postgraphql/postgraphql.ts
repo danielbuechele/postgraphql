@@ -16,6 +16,8 @@ type PostGraphQLOptions = {
   graphiql?: boolean,
   pgDefaultRole?: string,
   jwtSecret?: string,
+  jwtAudiences?: Array<string>,
+  jwtRole?: Array<string>,
   jwtPgTypeIdentifier?: string,
   watchPg?: boolean,
   showErrorStack?: boolean,
@@ -25,6 +27,7 @@ type PostGraphQLOptions = {
   exportJsonSchemaPath?: string,
   exportGqlSchemaPath?: string,
   bodySizeLimit?: string,
+  pgSettings?: { [key: string]: mixed },
 }
 
 /**
@@ -60,6 +63,12 @@ export default function postgraphql (
   else {
     schema = 'public'
     options = schemaOrOptions
+  }
+
+  // Check for a jwtSecret without a jwtPgTypeIdentifier
+  // a secret without a token identifier prevents JWT creation
+  if (options.jwtSecret && !options.jwtPgTypeIdentifier) {
+    throw new Error('jwtSecret provided, however jwtPgTypeIdentifier (token identifier) not provided.')
   }
 
   // Creates the Postgres schemas array.

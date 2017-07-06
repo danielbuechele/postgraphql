@@ -66,14 +66,17 @@ implements Paginator.Ordering<TInput, PgClassType.Value, AttributesCursor> {
       throw new Error('Before cursor must be a value tuple of the correct length.')
 
     const aliasIdentifier = Symbol()
-    const aliasIdentifier2 = Symbol()
+    const cteIdentifier = Symbol()
     const fromSql = this.pgPaginator.getFromEntrySql(input)
     const conditionSql = this.pgPaginator.getConditionSql(input)
 
     const query = sql.compile(sql.query`
-      with ${sql.identifier(aliasIdentifier2)} as (
+      -- The query is wrapped with a CTE on which the to_json function is
+      -- applied. This ensures the to_json function is only called on the final
+      -- results of the query.
+      with ${sql.identifier(cteIdentifier)} as (
         -- The standard select/from clauses up top.
-        select ${sql.identifier(aliasIdentifier)}.*
+        select ${sql.identifier(aliasIdentifier)} as value
         from ${fromSql} as ${sql.identifier(aliasIdentifier)}
 
         -- Combine our cursors with the condition used for this page to
@@ -99,7 +102,7 @@ implements Paginator.Ordering<TInput, PgClassType.Value, AttributesCursor> {
 
         -- If we have an offset, add that as well.
         ${_offset != null ? sql.query`offset ${sql.value(_offset)}` : sql.query``}
-      ) select to_json(${sql.identifier(aliasIdentifier2)}) as value from ${sql.identifier(aliasIdentifier2)};
+      ) select to_json(${sql.identifier(cteIdentifier)}.value) as value from ${sql.identifier(cteIdentifier)};
     `)
 
     let { rows } = await client.query(query)

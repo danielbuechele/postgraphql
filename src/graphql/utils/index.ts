@@ -7,3 +7,4 @@ import parseGqlLiteralToValue from './parseGqlLiteralToValue'
 export { buildObject, formatName, idSerde, scrib, parseGqlLiteralToValue }
 
 export * from './memoize'
+export * from './tags'
